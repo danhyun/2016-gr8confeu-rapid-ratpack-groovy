@@ -1,0 +1,47 @@
+buildscript {
+  repositories {
+    jcenter()
+  }
+
+  dependencies {
+    classpath 'org.asciidoctor:asciidoctor-gradle-plugin:1.5.3'
+    classpath 'org.asciidoctor:asciidoctorj-pdf:1.5.0-alpha.11'
+  }
+}
+
+apply plugin: 'org.asciidoctor.convert'
+
+asciidoctor {
+  sourceDir = new File("$rootDir/asciidoctor")
+  sources {
+    include 'notes.adoc'
+  }
+  backends = ['html5', 'pdf']
+
+  attributes  toc                 :'left',
+              'source-highlighter': 'coderay',
+              icons               : 'font',
+              numbered            : '',
+              idprefix            : ''
+}
+
+allprojects {
+  apply plugin: 'idea'
+}
+
+subprojects {
+  repositories {
+    jcenter()
+  }
+}
+
+
+task stage(dependsOn: ':example-08-heroku:stage')
+
+idea {
+  project {
+    vcs 'Git'
+    languageLevel '1.8'
+    jdkName '1.8'
+  }
+}

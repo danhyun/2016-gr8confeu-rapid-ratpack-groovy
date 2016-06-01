@@ -1,0 +1,86 @@
+:example: example-08-heroku
+:groovy: {example}/src/main/groovy
+:ratpack: {example}/src/ratpack
+:resources: {example}/src/main/resources
+
+== Deploying to Heroku
+
+Heroku is PaaS that allows you to deploy you applications quickly.
+It's a great way to "get something" out there while quickly iterating.
+You can prototype for free and once you're ready to "go live" you can pay for your usage.
+
+To get started you'll need:
+
+* A https://signup.heroku.com[Heroku account] (no credit card required)
+* https://toolbelt.heroku.com/[Heroku toolbelt] -- command line binaries for working with Heroku
+
+=== Setup
+
+In order to deploy our application to Heroku we'll need two pieces of information:
+
+* A `Procfile`
+* A `stage` task when using Gradle
+
+Let's go over the changes we'll need to make to the Gradle build script.
+
+[source, gradle]
+.{example}/{example}.gradle
+----
+include::../{example}/{example}.gradle[tags=stage]
+----
+<1> I recommend using Shadow plugin for packaging your Java applications for production
+<2> We create a `stage` task that invokes `installShadowApp`
+
+The second change we need to make is to add a file called `Procfile`.
+This file is a signal that communicates to Heroku what command to invoke to start our application.
+
+[source]
+.{example}/Procfile
+----
+include::../{example}/Procfile[]
+----
+
+=== Creating and deploying the application to Heroku
+
+[source, bash]
+----
+$ heroku apps:create todo-backend-ratpack-groovy # <1>
+Creating todo-backend-ratpack-groovy... done, stack is cedar-14
+https://todo-backend-ratpack-groovy.herokuapp.com/ | https://git.heroku.com/todo-backend-ratpack-groovy.git
+
+$ heroku git:remote --app todo-backend-ratpack-groovy # <2>
+set git remote heroku to https://git.heroku.com/todo-backend-ratpack-groovy.git
+
+$ git remote -v # <3>
+heroku  https://git.heroku.com/todo-backend-ratpack-groovy.git (fetch)
+heroku  https://git.heroku.com/todo-backend-ratpack-groovy.git (push)
+
+$ git push heroku master # <4>
+
+$ heroku logs -t # <5>
+
+$ curl https://todo-backend-ratpack-groovy.herokuapp.com/todo # <6>
+[]
+----
+<1> Create a new application (Heroku will assign a random name if you don't)
+<2> Add heroku git repository to our remotes
+<3> View urls for the newly added git remote
+<4> Push our code to the newly minted heroku remote repository
+<5> Tail your application logs
+<6> Curl against your application in the wild!
+
+=== Final Product
+
+With our application deployed and serving traffic, let's finish by running the TodoBackend specifications against our application.
+
+You can navigate to the specification page to see the tests in action: http://todobackend.com/specs/?https://todo-backend-ratpack-groovy.herokuapp.com/todo
+
+.TodoBackend Specs
+image::todobackend-specs.PNG[]
+
+You can similarly use our REST implementation against this sample Todo Frontend application.
+
+http://todobackend.com/client/?https://todo-backend-ratpack-groovy.herokuapp.com/todo
+
+.TodoBackend Client
+image::todobackend-client.PNG[]

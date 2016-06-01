@@ -1,0 +1,40 @@
+== Code sample and notes
+
+The code for this presentation is available at https://github.com/danhyun/2016-gr8confeu-rapid-ratpack-groovy.
+
+These notes are also available in https://danhyun.github.io/2016-gr8confeu-rapid-ratpack-groovy/notes.pdf[PDF format].
+
+== Goal
+
+* Produce a REST API in Groovy to manage Todos.
+* Pass specifications @ http://todobackend.com/specs/?https://todo-backend-ratpack-groovy.herokuapp.com/todo[todobackend.com]
+* Plug into a http://todobackend.com/client/?https://todo-backend-ratpack-groovy.herokuapp.com/todo[Todo Frontend app]
+
+== Tools
+
+* Ratpack (Web server)
+* Gradle (Build tool)
+
+== What is Ratpack?
+
+Ratpack is a set of developer friendly, reactive, asynchronous, non-blocking Java 8 libraries that facilitate rapid web application development.
+
+* Lightweight
+** No SDK binaries download
+** No intermediary code generation
+
+* Doesn't implement Servlet Specification.
+** Uses Netty for underlying network programming
+** No Servlets
+** No Servlet Container
+
+* Not "Fullstack" not MVC; Functionality is provided https://github.com/ratpack/ratpack[via "modules"]
+** Core (HTTP/Execution)
+** Sessions/Auth Pac4j
+** Database (HikariCP)
+** RxJava/Hystrix
+** Templating (Groovy's http://groovy-lang.org/templating.html#_the_markuptemplateengine[MarkupTemplateEngine], Handlebars, Thymeleaf
+** Dependency Injection (Guice/Spring Boot)
+
+* First class testing support
+** Test framework agnostic fixtures that let you test around every feature of Ratpack

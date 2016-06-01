@@ -1,0 +1,60 @@
+:example: example-01-groovy-script
+:groovy: {example}/src/main/groovy
+
+== Hej Verden
+
+Getting started in Ratpack is a non-event.
+You may be accustomed to jumping through hoops to get a new web project started.
+To demonstrate Ratpack's low effort project initialization, consider the following Groovy script.
+
+[source, groovy]
+.{groovy}/ratpack.groovy
+----
+include::../{groovy}/ratpack.groovy[]
+----
+<1> Use `@Grab` to pull `ratpack-groovy` artifact
+<2> Invoke `ratpack` method to define server
+<3> Use `handlers` to declare the `Chain` of our application
+<4> Define a `Handler` bound to `HTTP GET /`
+<5> Render 'Hej Verden' to the client
+
+That's really all that's required to get started!
+
+We're now ready to start our application. We'll invoke the run task then navigate to `localhost:5050`
+
+[source, bash, subs="attributes"]
+----
+$ groovy {groovy}/ratpack.groovy
+
+$ curl -s localhost:5050
+Hej Verden
+----
+
+=== Live reload
+
+When prototyping Ratpack apps in a Groovy script, you can change the script while the application and see your changes reflected in real time!
+There's no need to re-run the Groovy script.
+
+[source, bash, subs="attributes"]
+----
+$ groovy {groovy}/ratpack.groovy
+
+$ curl -s localhost:5050
+Hej Verden
+
+# modify ratpack.groovy to
+# @Grab('io.ratpack:ratpack-groovy:1.3.3')
+#
+# import static ratpack.groovy.Groovy.ratpack
+#
+# ratpack {
+#   handlers {
+#     get {
+#       render 'Hej GR8Conf EU!'
+#     }
+#   }
+# }
+
+$ curl localhost:5050
+Hej GR8Conf EU!
+----

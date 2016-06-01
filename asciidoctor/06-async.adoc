@@ -1,0 +1,118 @@
+:example: example-05-async
+:groovy: {example}/src/main/groovy
+:ratpack: {example}/src/ratpack
+:resources: {example}/src/main/resources
+
+== Asynchronous Programming
+
+At this point we should remember that Ratpack is a non-blocking and asynchronous framework.
+This has implications in how you code your `Handler` logic.
+If you are performing any kind of blocking I/O or any kind of computationally expensive operation, you'll need to tap into Ratpack's Blocking executor in order to let the main request processing thread continue processing requests.
+If you fail to use the Blocking executor you will start to observe performance degradation.
+
+=== Blocking.get()
+
+In the previous example we were making a blocking JDBC call, preventing the request processing thread of execution from tending to any other incoming requests.
+Ratpack provides a mechanism that allows you to create promises that will be executed on a separate thread pool.
+We will use this Blocking mechanism to represent a bit of work that should not be performed on the request taking thread.
+Promises are *l-a-z-y*.
+Promises in Ratpack are not executed unless they are subscribed via `Promise#then`.
+Promises will *always* be resolved in the order in which they were declared.
+Ratpack promise execution is deterministic.
+There is a detailed http://ldaley.com/post/97376696242/ratpack-execution-model-part-1[set] of http://ldaley.com/post/102495950257/ratpacks-execution-model-in-practice[blog articles] by http://twitter.com/ldaley[@ldaley], the project lead of Ratpack that explains this.
+
+Let's rewrite the previous example using the `Blocking` mechanism.
+[source, groovy]
+.{ratpack}/ratpack.groovy
+----
+include::../{ratpack}/ratpack.groovy[indent=0, tags=jooq]
+----
+<1> Use `Blocking.get` to wrap the blocking JDBC call
+<2> Resolve the promise and render the JSON serialized representation to the user
+
+It should be noted that the strongly typed queries can be separated from their actual execution in jOOQ.
+If the methods contain names like `fetch*`, `refresh`, `execute`, `store`, etc these are most likely the actual blocking JDBC call.
+
+=== Code cleanup
+
+At this point we'll take the time to create a dedicated class that handles CRUD operations for the `TODO` table.
+
+First we'll create a `TodoModel` that represents our `TODO` domain model.
+
+[source, groovy]
+.{groovy}/TodoModel.groovy
+----
+include::../{groovy}/TodoModel.groovy[]
+----
+
+Next we'll create a `TodoRepository` for performing CRUD operations on this `TodoModel`
+
+Let's start by migrating the `SELECT * FROM TODO` from the previous `Handler`
+[source, groovy]
+.{groovy}/TodoRepository.groovy
+----
+include::../{groovy}/TodoRepository.groovy[indent=0, tags=getAll]
+----
+
+We will now create a `TodoModule` that will provide this `TodoRepository` to the Ratpack registry.
+[source, groovy]
+.{groovy}/TodoModule.groovy
+----
+include::../{groovy}/TodoModule.groovy[]
+----
+<1> We're defining the `TodoRepository` as a singleton
+
+Next we'll register this `TodoModule` with Ratpack
+[source, groovy]
+.{ratpack}/ratpack.groovy
+----
+include::../{ratpack}/ratpack.groovy[indent=0, tags=todo-module]
+----
+
+Finally we'll update the `Handler` to make use of the `TodoRepository`
+[source, groovy]
+.{ratpack}/ratpack2.groovy
+----
+include::../{ratpack}/ratpack2.groovy[indent=0, tags=handler]
+----
+
+TIP: For style points use method references.
+
+[source, groovy]
+.{ratpack}/ratpack3.groovy
+----
+include::../{ratpack}/ratpack3.groovy[indent=0, tags=handler]
+----
+
+TIP: In Groovy, you can provide your Handler closure with types from the Registry and Ratpack will set them for you.
+
+[source, groovy]
+.{ratpack}/ratpack4.groovy
+----
+include::../{ratpack}/ratpack4.groovy[indent=0, tags=handler]
+----
+<1> Specify `TodoRepository` as a parameter to have Ratpack supply this registered object for you
+
+Doesn't that look lovely?
+
+=== Putting it all together
+
+Here is what the `TodoRepository`, `TodoModule` and `App` should look like at this point:
+
+[source, groovy]
+.{groovy}/TodoRepository2.groovy
+----
+include::../{groovy}/TodoRepository2.groovy[]
+----
+
+[source, groovy]
+.{groovy}/TodoModule2.groovy
+----
+include::../{groovy}/TodoModule2.groovy[]
+----
+
+[source, groovy]
+.{ratpack}/ratpack5.groovy
+----
+include::../{ratpack}/ratpack5.groovy[]
+----

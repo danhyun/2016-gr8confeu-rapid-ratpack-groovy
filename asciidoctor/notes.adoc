@@ -1,0 +1,34 @@
+= Rapid Groovy Web Application Development with Ratpack
+Daniel Hyun <https://github.com/danhyun[icon:github[] @danhyun] https://twitter.com/LSpacewalker[icon:twitter[] @LSpacewalker]>
+2016 June 03
+
+:imagesdir: images/
+
+[.text-center]
+image::gr8conf-logo.png[]
+
+[.text-center]
+image::ratpack-logo.png[]
+
+[.text-center]
+image::groovy-logo.png[512, 253.44]
+
+include::01-intro.adoc[]
+
+include::02-hello-world.adoc[]
+
+include::03-handlers.adoc[]
+
+include::04-gradle.adoc[]
+
+include::05-database.adoc[]
+
+include::06-async.adoc[]
+
+include::07-json.adoc[]
+
+include::08-evolution.adoc[]
+
+include::09-heroku.adoc[]
+
+include::10-resources.adoc[]

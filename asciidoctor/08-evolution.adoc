@@ -1,0 +1,118 @@
+:example: example-07-evolution
+:groovy: {example}/src/main/groovy
+:ratpack: {example}/src/ratpack
+:resources: {example}/src/main/resources
+
+== Evolution
+
+As your codebase grows, so will your chains.
+Ratpack has several mechanisms for composing chains that help maintain readability.
+
+=== Action<Chain>
+
+Ratpack allows you to insert `Action<Chain>` s to the chain, which allows for basic composition.
+
+In the following example we will take our chain and migrate it to a class that implements `Action<Chain>`.
+We'll also take this opportunity to leverage Ratpack's `InjectionHandler`.
+Up until this point we have been using Ratpack's handler type that allows declaration of registered objects as parameters in closures.
+Ratpack provides a type of `Handler` that declares your registry objects by type to facilitate registry retrieval.
+
+[source, groovy]
+.{groovy}/TodoBaseHandler.groovy
+----
+include::../{groovy}/TodoBaseHandler.groovy[]
+----
+<1> Extend `InjectionHandler`
+<2> Provide a `void handle()` method that has our types of interest, in this case we want the `TodoRepository`
+
+We now create an instance of `Action<Chain>` that represents everything about REST CRUD interactions with Todo objects.
+
+[source, groovy]
+.{groovy}/TodoChain.groovy
+----
+include::../{groovy}/TodoChain.groovy[]
+----
+
+Once this is complete we can come back to the main application and update accordingly.
+
+[source, groovy]
+.{ratpack}/ratpack.groovy
+----
+include::../{ratpack}/ratpack.groovy[]
+----
+<1> Register our new `TodoBaseHandler`
+<2> Register our new `TodoChain`
+<3> Insert our `GroovyChainAction` that we have registered
+
+All of the previous REST CRUD functionality is preserved.
+
+=== Implementing Individual Todo chain
+
+We want to provide the ability to perform CRUD operations on an individual Todo basis.
+We'll make use of the `TodoChain` and `InjectionHandler` once again to provide this REST CRUD functionality.
+This individual `TodoHandler` will handle REST CRUD functionality on a per Todo basis.
+
+[source, groovy]
+.{groovy}/TodoHandler.groovy
+----
+include::../{groovy}/TodoHandler.groovy[]
+----
+
+After implementing the `TodoHandler` we'll need to add it to the registry and to the `TodoChain`.
+
+[source, groovy]
+.{groovy}/TodoChain2.groovy
+----
+include::../{groovy}/TodoChain2.groovy[]
+----
+<1> Making use of `PathTokens` to extract dynamic `id` parameter from path and assigning our `TodoHandler` to handle this path
+
+To finish this implementation we'll the handler to the registry.
+
+[source, groovy]
+.{ratpack}/ratpack2.groovy
+----
+include::../{ratpack}/ratpack2.groovy[indent=0, tags=registry]
+----
+
+=== Putting it all together
+
+NOTE: We're adding `String` to the registry which represents base url of the REST api
+
+[source, groovy]
+.{groovy}/CORSHandler.groovy
+----
+include::../{groovy}/CORSHandler.groovy[]
+----
+<1> Create a base url
+<2> Add base url to the registry
+
+.ratpack2 Demo
+[source, bash, subs="verbatim,attributes"]
+----
+$ curl http://localhost:5050/
+[]
+
+$ curl -X POST -H 'Content-type: application/json' --data '{"title":"Attend GR8Conf EU 2016"}' http://localhost:5050/
+{"id":1,"title":"Attend GR8Conf EU 2016","completed":false,"order":null,"url":"http://localhost:5050/1"}
+
+$ curl http://localhost:5050/
+[{"id":1,"title":"Attend GR8Conf EU 2016","completed":false,"order":null,"url":"http://localhost:5050/1"}]
+
+$ curl http://localhost:5050/1
+{"id":1,"title":"Attend GR8Conf EU 2016","completed":false,"order":null,"url":"http://localhost:5050/1"}
+
+$ curl -X PATCH -H 'Content-type: application/json' --data '{"completed": true}' http://localhost:5050/1
+{"id":1,"title":"Attend GR8Conf EU 2016","completed":true,"order":null,"url":"http://localhost:5050/1"}
+
+$ curl http://localhost:5050/
+[{"id":1,"title":"Attend GR8Conf EU 2016","completed":true,"order":null,"url":"http://localhost:5050/1"}]
+
+$ curl -X DELETE http://localhost:5050/1
+
+
+$ curl http://localhost:5050/
+[]
+
+$ curl http://localhost:5050/1
+----

@@ -1,0 +1,149 @@
+:example: example-02-handlers
+:groovy: {example}/src/main/groovy
+
+== Handlers
+
+Handlers are where request processing logic is provided.
+A `Handler` is a functional interface defined as `void handle(Context context)` and can be easily expressed as a Groovy `Closure`.
+The context is a registry that provides access to a map-like data-structure that can be populated and queried.
+Request and response objects are accessible via the `Handler`.
+
+=== Request Response Interaction
+
+As an implementation detail of the TodoBackend application, we need to set CORS headers on each response.
+
+Setting headers on the response
+[source, groovy]
+.{groovy}/ratpack.groovy
+----
+include::../{groovy}/ratpack.groovy[]
+----
+<1> Access the response's headers from the `Context`
+<2> Add some headers for implementing CORS functionality
+
+.ratpack Demo
+[source, bash, subs="verbatim,attributes"]
+----
+$ groovy {groovy}/ratpack.groovy # <1>
+
+$ curl -v localhost:5050
+* Rebuilt URL to: localhost:5050/
+* timeout on name lookup is not supported
+*   Trying ::1...
+* Connected to localhost (::1) port 5050 (#0)
+> GET / HTTP/1.1
+> Host: localhost:5050
+> User-Agent: curl/7.45.0
+> Accept: */*
+>
+< HTTP/1.1 200 OK
+< Access-Control-Allow-Origin: * # <2>
+< Access-Control-Allow-Headers: x-requested-with, origin, content-type, accept # <2>
+< content-type: text/plain;charset=UTF-8
+< content-length: 20
+< connection: keep-alive
+<
+Hej GR8Conf EU 2016!
+----
+<1> Invoke our Ratpack Groovy script
+<2> Issue curl and inspect response headers to verify that our CORS headers are added
+
+=== Organization
+
+Because our REST implementation requires that CORS is enabled, the `Access-Control-Allow-Origin` and `Access-Control-Allow-Headers` headers need to be set on every response.
+However, setting these headers in each `Handler` is tedious and error prone.
+Luckily `Handler` s are designed to be composable units of request processing.
+Handlers are composed in a logical manner via the `Chain`.
+Handlers can either send a response or delegate further request processing to the next `Handler` in the `Chain`.
+Handlers signal delegation via `Context#next`.
+
+We'll start our refactoring by extracting the CORS setting logic to its own handler.
+
+[source, groovy]
+.{groovy}/ratpack2.groovy
+----
+include::../{groovy}/ratpack2.groovy[]
+----
+<1> Declare a new handler to handle all incoming requests regardless of method or path
+<2> Delegate processing to the next `Handler` in the chain
+
+We can curl the application to make sure that the headers are indeed being set for each request.
+
+.ratpack2 Demo
+[source, bash, subs="verbatim,attributes"]
+----
+$ groovy {groovy}/ratpack2.groovy # <1>
+
+$ curl -v localhost:5050/
+* timeout on name lookup is not supported
+*   Trying ::1...
+* Connected to localhost (::1) port 5050 (#0)
+> GET / HTTP/1.1
+> Host: localhost:5050
+> User-Agent: curl/7.45.0
+> Accept: */*
+>
+< HTTP/1.1 200 OK
+< Access-Control-Allow-Origin: * # <2>
+< Access-Control-Allow-Headers: x-requested-with, origin, content-type, accept # <2>
+< content-type: text/plain;charset=UTF-8
+< content-length: 20
+< connection: keep-alive
+<
+Hej GR8Conf EU 2016!
+
+$ curl -v localhost:5050/no-such-path
+* timeout on name lookup is not supported
+*   Trying ::1...
+* Connected to localhost (::1) port 5050 (#0)
+> GET /no-such-path HTTP/1.1
+> Host: localhost:5050
+> User-Agent: curl/7.45.0
+> Accept: */*
+>
+< HTTP/1.1 404 Not Found
+< Access-Control-Allow-Origin: * # <3>
+< Access-Control-Allow-Headers: x-requested-with, origin, content-type, accept # <3>
+< content-type: text/plain
+< content-length: 16
+< connection: keep-alive
+<
+Client error 404
+
+$ curl -X POST -v localhost:5050/
+* timeout on name lookup is not supported
+*   Trying ::1...
+* Connected to localhost (::1) port 5050 (#0)
+> POST / HTTP/1.1
+> Host: localhost:5050
+> User-Agent: curl/7.45.0
+> Accept: */*
+>
+< HTTP/1.1 405 Method Not Allowed
+< Access-Control-Allow-Origin: * # <4>
+< Access-Control-Allow-Headers: x-requested-with, origin, content-type, accept # <4>
+< content-type: text/plain
+< content-length: 16
+< connection: keep-alive
+<
+Client error 405
+----
+<1> Run `ratpack2.groovy` script
+<2> Verify that CORS headers were added to `GET /` endpoint
+<3> Verify that CORS headers were added to undefined `GET /no-such-path` endpoint
+<4> Verify that CORS headers were added to unsupported `POST /` endpoint
+
+=== Standalone Handlers
+
+As you can imagine, the number of handlers in your chain can quickly grow.
+Ratpack provides ways to evolve your code base as your handlers and chains grow.
+
+The idea is to migrate handling logic to discrete classes or groups of classes in order to keep your codebase readable and maintainable.
+
+[source, groovy]
+.{groovy}/ratpack3.groovy
+----
+include::../{groovy}/ratpack3.groovy[]
+----
+<1> Extract our CORS handling logic to its own class
+<2> Add the newly migrated `CORSHandler` to our Chain
